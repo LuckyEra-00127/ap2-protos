@@ -50,6 +50,11 @@ jobs:
           module github.com/LuckyEra-00127/ap2-generated
 
           go 1.22
+          
+          require (
+            google.golang.org/grpc v1.67.1
+            google.golang.org/protobuf v1.34.2
+          )
           EOF
 
       - name: Generate Go files
