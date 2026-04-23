@@ -44,18 +44,19 @@ jobs:
           token: ${{ secrets.GENERATED_REPO_PAT }}
           path: ap2-generated
 
-      - name: Write generated module files
+      - name: Write generated module file
         run: |
           cat > ap2-generated/go.mod <<'EOF'
           module github.com/LuckyEra-00127/ap2-generated
 
           go 1.22
-
-          require (
-            google.golang.org/grpc v1.67.1
-            google.golang.org/protobuf v1.34.2
-          )
           EOF
+
+      - name: Pin generated runtime dependencies
+        working-directory: ap2-generated
+        run: |
+          go get google.golang.org/protobuf@v1.34.2
+          go get google.golang.org/grpc@v1.67.1
 
       - name: Generate Go files
         run: |
@@ -66,11 +67,6 @@ jobs:
             --go-grpc_out=ap2-generated \
             --go-grpc_opt=module=github.com/LuckyEra-00127/ap2-generated \
             proto/order_payment.proto
-
-      - name: Download pinned dependencies
-        working-directory: ap2-generated
-        run: |
-          go mod download
 
       - name: Tidy generated module
         working-directory: ap2-generated
