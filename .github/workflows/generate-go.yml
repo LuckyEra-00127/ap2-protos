@@ -46,6 +46,7 @@ jobs:
 
       - name: Generate Go files
         run: |
+          mkdir -p ap2-generated/gen/go/orderpayment/v1
           rm -f ap2-generated/gen/go/orderpayment/v1/*.pb.go
           protoc -I . \
             --go_out=ap2-generated \
