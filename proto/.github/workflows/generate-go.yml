@@ -1,0 +1,71 @@
+name: Generate Go protobuf code
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "proto/**/*.proto"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout proto repo
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.22"
+
+      - name: Install protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          protoc --version
+
+      - name: Install Go protobuf plugins
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Checkout generated repo
+        uses: actions/checkout@v4
+        with:
+          repository: LuckyEra-00127/ap2-generated
+          token: ${{ secrets.GENERATED_REPO_PAT }}
+          path: ap2-generated
+
+      - name: Ensure go.mod exists
+        run: |
+          cat > ap2-generated/go.mod <<'EOF'
+          module github.com/LuckyEra-00127/ap2-generated
+
+          go 1.22
+          EOF
+
+      - name: Generate Go files
+        run: |
+          rm -rf ap2-generated/gen
+          protoc -I . \
+            --go_out=ap2-generated \
+            --go_opt=module=github.com/LuckyEra-00127/ap2-generated \
+            --go-grpc_out=ap2-generated \
+            --go-grpc_opt=module=github.com/LuckyEra-00127/ap2-generated \
+            proto/order_payment.proto
+
+      - name: Commit and push generated code
+        working-directory: ap2-generated
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: regenerate protobuf Go code"
+          git push
